@@ -1,9 +1,13 @@
 import azure.functions as func
 import logging
+import os
 
 from crawl_utils import main as crawl
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+
+CRAWL_URL = os.getenv("CRAWL_URL")
+CRAWL_BASE = os.getenv("CRAWL_BASE")
 
 @app.route(route="http_trigger")
 def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
@@ -19,15 +23,20 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
             name = req_body.get('name')
 
     # URL is the address of the website you want to crawl. For example: https://www.example.com/some-page/subpage/etc
-    url = "https://www.rigassatiksme.lv/lv/biletes/"
+    url = CRAWL_URL
     # Base URL is the domain name of the website. For example: https://www.example.com to crawl only this domain.
-    base = "https://www.rigassatiksme.lv/lv/"
-    crawl(url, base)
+    base = CRAWL_BASE
 
-    if name:
-        return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
-    else:
+    processed_pages = 0
+    try:
+        processed_pages = crawl(url, base)
+    except Exception as e:
         return func.HttpResponse(
-             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-             status_code=200
+            f"Failed to crawl {url}. Error: {e}",
+            status_code=500
         )
+
+    return func.HttpResponse(
+            f"Succesfully crawled {processed_pages} pages from {url} and stored in Azure Storage.",
+            status_code=200
+    )

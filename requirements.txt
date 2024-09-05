@@ -6,3 +6,5 @@ azure-functions
 azure.identity
 beautifulsoup4
 python-dotenv
+tqdm
+azure-storage-blob

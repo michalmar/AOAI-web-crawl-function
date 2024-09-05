@@ -6,9 +6,16 @@ import urllib3
 import random
 import time
 import logging
+from tqdm import tqdm
+from azure.storage.blob import BlobClient, ContentSettings
+
 
 # Disable warnings from urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 
 
 # import doc_utils as doc_utilse
@@ -215,6 +222,13 @@ def crawl_submenus(url, base,  menu_identifiers, depth=0, max_depth=3, visited=N
     return all_links
 
 
+def save_file(path, text):
+#    with open(path, "w", encoding="UTF-8") as f:
+#        f.write(text)
+    blob = BlobClient.from_connection_string(conn_str=AZURE_STORAGE_CONNECTION_STRING, container_name=AZURE_STORAGE_CONTAINER_NAME, blob_name=path) 
+    res = blob.upload_blob(text, content_settings=ContentSettings(content_type='text/plain'), overwrite=True)
+    logging.info(f"Uploaded {path} to Azure Blob Storage.")
+    return path
 
 
 # Input text field for URL address
@@ -259,10 +273,10 @@ def main(url, base):
         paths = []
         idx = 0
         # for title, text in all_pages.items():
-        for link in all_links:
+        for link in tqdm(all_links):
             text = all_pages[link]
             title = link
-            logging.info(f"URL: {title}") # URL
+            # logging.info(f"URL: {title}") # URL
             # logging.info(f"Text: {text}")
             
             # title = hash(title)
@@ -276,10 +290,12 @@ def main(url, base):
                 logging.info(f"Truncated title: {safe_title}")
     
             # TODO: change to save to blob storage
-            with open(f"output/{safe_title}.txt", "w") as f:
-                f.write(text)
+            path = f"output/{safe_title}.txt"
+            save_file(path, text)
+            # with open(f"output/{safe_title}.txt", "w") as f:
+            #     f.write(text)
 
-            paths.append(f"output/{safe_title}.txt")
+            paths.append(path)
             # progress_bar.progress((idx + 1) / total_links)
             idx += 1
 
@@ -291,12 +307,13 @@ def main(url, base):
         #     num_docs, num_chunks = doc_utils.process_and_upload_files(paths, 10, use_semantic_chunking=False)
         #     logging.info(f"uploaded: {num_docs} docs in {num_chunks} chunks")
         
+        return len(paths)
 
 
 if __name__ == "__main__":
     # URL is the address of the website you want to crawl. For example: https://www.example.com/some-page/subpage/etc
-    url = "https://www.rigassatiksme.lv/lv/biletes/"
+    url = "https://www.example.lv/lv/xxx/"
     # Base URL is the domain name of the website. For example: https://www.example.com to crawl only this domain.
-    base = "https://www.rigassatiksme.lv/lv/"
+    base = "https://www.example.lv/lv/"
     main(url, base)
 
