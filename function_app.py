@@ -1,6 +1,8 @@
 import azure.functions as func
 import logging
 
+from crawl_utils import main as crawl
+
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 @app.route(route="http_trigger")
@@ -15,6 +17,12 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
             pass
         else:
             name = req_body.get('name')
+
+    # URL is the address of the website you want to crawl. For example: https://www.example.com/some-page/subpage/etc
+    url = "https://www.rigassatiksme.lv/lv/biletes/"
+    # Base URL is the domain name of the website. For example: https://www.example.com to crawl only this domain.
+    base = "https://www.rigassatiksme.lv/lv/"
+    crawl(url, base)
 
     if name:
         return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
